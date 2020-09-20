@@ -1,9 +1,11 @@
 use List::Util 'max';
 
+# 821 105 988
+
 my ( $w, $h, $x, $y, $z ) = @ARGV;
 
 my $CORRIDOR_WIDTH = 3;
-my $WALL_WIDTH     = 1;
+my $WALL_WIDTH     = 2;
 my $WALL_HEIGHT    = 5;
 my $CELL_WIDTH     = $CORRIDOR_WIDTH + $WALL_WIDTH;
 
@@ -45,13 +47,30 @@ walk(int rand $w, int rand $h);	# generate
 my $sx = $x;
 my $sy = $y + 1;
 my $sz = $z;
-my $tx = $sx + ($w * $CELL_WIDTH);
+my $tx = $sx + ($w * ($CELL_WIDTH+1));
 my $ty = $sy + $CELL_WIDTH;
-my $tz = $sz + ($h * $CELL_WIDTH);
+my $tz = $sz + ($h * ($CELL_WIDTH+1));
 
-my $cmd = "mcrcon 'fill $sx $sy $sz $tx $ty $tz air replace'";
-print $cmd, "\n";
-`$cmd`;
+my $max_cells = (2**15);
+
+my $max_dim = int(sqrt( $max_cells / ($WALL_HEIGHT+2) )) - 1;
+
+print $max_dim, "\n";
+
+for ( $i = $sx; $i < $tx; $i += $max_dim )
+{
+  for ( $j = $sz; $j < $tz; $j += $max_dim )
+  {
+    my $ti = ($i + $max_dim) < $tx ? ($i + $max_dim) : $tx;
+    my $tj = ($j + $max_dim) < $tz ? ($j + $max_dim) : $tz;
+
+    my $cmd = "mcrcon 'fill $i $sy $j $ti $ty $tj air replace'";
+    print $cmd, "\n";
+    `$cmd`;
+  }
+}
+
+
 
 for my $row (0 .. $h) {			# display
   my $column = 0;
@@ -64,7 +83,7 @@ for my $row (0 .. $h) {			# display
     my $sz = $z + ($column * $CELL_WIDTH);
     my $tx = $sx + ($WALL_WIDTH - 1);
     my $ty = $y + $WALL_HEIGHT;
-    my $tz = $sz + $CORRIDOR_WIDTH;
+    my $tz = $sz + $CORRIDOR_WIDTH + ($WALL_WIDTH - 1);
 
     print $cell;
     my $cmd = "";
@@ -74,7 +93,8 @@ for my $row (0 .. $h) {			# display
     }
     else
     {
-      $cmd = "mcrcon 'fill $sx $sy $sz $tx $ty $sz stone replace'";
+      $tz = $sz + ($WALL_WIDTH-1);
+      $cmd = "mcrcon 'fill $sx $sy $sz $tx $ty $tz stone replace'";
     }
 
     `$cmd`;
@@ -83,7 +103,9 @@ for my $row (0 .. $h) {			# display
     $column++;
 
   }
-  print "+\n";
+  print "\n";
+
+  #  print "+\n";
 #  $cmd = "mcrcon 'fill $sx $sy $sz $tx $ty $sz stone replace'";
 
 
@@ -91,10 +113,10 @@ for my $row (0 .. $h) {			# display
   push( @{$ver[$row]}, "|  " ) if $row < $h;
 	for my $cell ( @{$ver[$row]} )
   {
-    my $sx = $x + ($row * $CELL_WIDTH) + 1;
+    my $sx = $x + ($row * $CELL_WIDTH) + $WALL_WIDTH;
     my $sy = $y + 1;
     my $sz = $z + ($column * $CELL_WIDTH);
-    my $tx = $sx + ($CORRIDOR_WIDTH - 1);
+    my $tx = $sx + ($CORRIDOR_WIDTH - 1) + ($WALL_WIDTH - 1);
     my $ty = $y + $WALL_HEIGHT;
     my $tz = $sz + ($WALL_WIDTH - 1);
 
@@ -103,10 +125,13 @@ for my $row (0 .. $h) {			# display
 
     print $cell;
     `$cmd`;
+
+#    sleep(1);
     $column++;
   }
 
-  print  "|\n" if $row < $h;
+  print "\n";
+#  print  "|\n" if $row < $h;
 
 
 }
